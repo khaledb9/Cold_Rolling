@@ -1,0 +1,49 @@
+units			metal
+dimension		3
+boundary 		p p p
+
+# Build Structure
+	
+read_data		Feini.dat	
+
+# Pair Interactions
+
+pair_style      eam/alloy
+pair_coeff      * * FeCuNi.eam.alloy Fe Cu Ni
+
+group 			FeAtoms type 1
+
+delete_atoms    overlap 1.5 FeAtoms FeAtoms compress yes
+
+# Spheres 
+
+region			CuSphere1 sphere 205 95 65 25 units box							
+delete_atoms	region CuSphere1 compress yes
+
+region			CuSphere2 sphere 95 120 130 25 units box							
+delete_atoms	region CuSphere2 compress yes
+
+region			CuSphere3 sphere 330 135 50 25 units box							
+delete_atoms	region CuSphere3 compress yes
+
+
+lattice 		fcc 3.61 orient x 1 -1 0  orient y 1 1 0 orient z 0 0 2
+create_atoms	2 region CuSphere1
+
+lattice 		fcc 3.61 orient x 1 -1 0  orient y 1 1 0 orient z 0 0 2
+create_atoms	2 region CuSphere2
+
+lattice 		fcc 3.61 orient x 1 -1 0  orient y 1 1 0 orient z 0 0 2
+create_atoms	2 region CuSphere3
+
+
+
+# Set Normal Interactions 
+
+neighbor 			2.0 bin
+neigh_modify 		delay 0 every 1
+
+# Output Data
+
+write_dump 			all cfg FeCu.cfg mass type xs ys zs id modify element Fe Cu Ni
+write_data			FeCuInitial.dat

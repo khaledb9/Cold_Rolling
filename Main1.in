@@ -1,0 +1,62 @@
+# Cold Rolling of FeCu 
+# Prepared by Khaled Badawy For Project: Cold Rolling of FeCu
+
+units			metal
+dimension		3
+boundary 		p p p									# Only initial for relaxation purpose
+
+package			gpu 8 neigh no
+
+variable		dt 	  	equal 0.002						# Timestep
+variable		SPD	  	equal vcm(FS,x)					# Speed in x for few atoms in front 
+variable  		Dimz1 	equal bound(Sample,zmin)		# Get zlo for sample
+variable  		Dimz2 	equal bound(Sample,zmax)		# Get zhi for sample
+variable  		Dimy1 	equal bound(Sample,ymin)		# Get ylo for sample
+variable  		Dimy2 	equal bound(Sample,ymax)		# Get yhi for sample
+variable  		Dimx1 	equal bound(Sample,xmin)		# Get xlo for sample
+variable  		Dimx2 	equal bound(Sample,xmax)		# Get xhi for sample
+variable  		DimX  	equal "abs((v_Dimx2-v_Dimx1))"	# X-dimension
+variable  		DimY  	equal "abs((v_Dimy2-v_Dimy1))"	# Y-dimension
+variable  		DimZ  	equal "abs((v_Dimz2-v_Dimz1))"	# Z-dimension
+variable		rollp 	index 15 30 45 				# Some labels 	
+
+# Read Data
+
+shell			cd relax
+read_data		FeCu0.dat
+shell			cd ..
+
+# Grouping
+
+group 			FeAtoms type 1
+group 			CuAtoms type 2
+group			Sample  type 1 2
+
+# Pair Interactions
+
+pair_style      hybrid  eam/alloy/gpu  gauss/cut 6.2
+pair_coeff		* * eam/alloy FeCuNi.eam.alloy Fe Cu NULL	# Fe-Cu Fe-Fe Cu-Cu
+pair_coeff		1 3 gauss/cut 150 0.1 2.25					# Roller-Fe
+pair_coeff		2 3 gauss/cut 150 0.1 2.25 					# Roller-Cu
+pair_coeff		3 3 none									# Inside Rollers (Ignored)
+
+# It is a large problem !
+
+neigh_modify one 5000 page 800000 exclude type 3 3
+ 
+timestep 		${dt}
+
+# Call Codes and Build Rollers	
+
+fix 			NVT Sample nvt temp 300.0 300.0 0.1
+
+include			var.k			# Some Defined Variables
+include			buildRoll.k		# Build Rollers Set 1
+
+dump 			1 all cfg/mpiio 1 RollStart${rollp}_*.cfg mass type xs ys zs  
+dump_modify 	1 element Fe Cu Ni
+run 0							# Stabilize things
+undump			1
+
+include			roll.k			# Roll
+include			release.k		# Delete Rollers and dump

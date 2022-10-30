@@ -1,0 +1,102 @@
+LAMMPS (24 Jan 2020)
+OMP_NUM_THREADS environment is not set. Defaulting to 1 thread. (../comm.cpp:94)
+  using 1 OpenMP thread(s) per MPI task
+units			metal
+dimension		3
+boundary 		p p p
+
+# Build Structure
+
+read_data		Feini.dat
+  orthogonal box = (0 0 0) to (500 200 200)
+  1 by 1 by 1 MPI processor grid
+  reading atoms ...
+  1710141 atoms
+  read_data CPU = 3.32212 secs
+
+# Pair Interactions
+
+pair_style      eam/alloy
+pair_coeff      * * FeCuNi.eam.alloy Fe Cu Ni
+
+group 			FeAtoms type 1
+1710141 atoms in group FeAtoms
+
+delete_atoms    overlap 1.5 FeAtoms FeAtoms compress yes
+Neighbor list info ...
+  update every 1 steps, delay 10 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 7.6
+  ghost atom cutoff = 7.6
+  binsize = 3.8, bins = 132 53 53
+  2 neighbor lists, perpetual/occasional/extra = 1 1 0
+  (1) command delete_atoms, occasional
+      attributes: full, newton on
+      pair build: full/bin/atomonly
+      stencil: full/bin/3d
+      bin: standard
+  (2) pair eam/alloy, perpetual
+      attributes: half, newton on
+      pair build: half/bin/atomonly/newton
+      stencil: half/bin/3d/newton
+      bin: standard
+Deleted 27762 atoms, new total = 1682379
+
+# Spheres
+
+region			CuSphere1 sphere 205 95 65 25 units box
+delete_atoms	region CuSphere1 compress yes
+Deleted 5586 atoms, new total = 1676793
+
+region			CuSphere2 sphere 95 120 130 25 units box
+delete_atoms	region CuSphere2 compress yes
+Deleted 5589 atoms, new total = 1671204
+
+region			CuSphere3 sphere 330 135 50 25 units box
+delete_atoms	region CuSphere3 compress yes
+Deleted 5571 atoms, new total = 1665633
+
+
+lattice 		fcc 3.61 orient x 1 -1 0  orient y 1 1 0 orient z 0 0 2
+Lattice spacing in x,y,z = 5.10531 5.10531 3.61
+create_atoms	2 region CuSphere1
+Created 5566 atoms
+  create_atoms CPU = 0.017952 secs
+
+lattice 		fcc 3.61 orient x 1 -1 0  orient y 1 1 0 orient z 0 0 2
+Lattice spacing in x,y,z = 5.10531 5.10531 3.61
+create_atoms	2 region CuSphere2
+Created 5556 atoms
+  create_atoms CPU = 0.0109689 secs
+
+lattice 		fcc 3.61 orient x 1 -1 0  orient y 1 1 0 orient z 0 0 2
+Lattice spacing in x,y,z = 5.10531 5.10531 3.61
+create_atoms	2 region CuSphere3
+Created 5559 atoms
+  create_atoms CPU = 0.0119629 secs
+
+
+
+# Set Normal Interactions
+
+neighbor 			2.0 bin
+neigh_modify 		delay 0 every 1
+
+# Output Data
+
+write_dump 			all cfg FeCu.cfg mass type xs ys zs id modify element Fe Cu Ni
+WARNING: Calling write_dump before a full system init. (../write_dump.cpp:80)
+write_data			FeCuInitial.dat
+Neighbor list info ...
+  update every 1 steps, delay 0 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 7.6
+  ghost atom cutoff = 7.6
+  binsize = 3.8, bins = 132 53 53
+  1 neighbor lists, perpetual/occasional/extra = 1 0 0
+  (1) pair eam/alloy, perpetual
+      attributes: half, newton on
+      pair build: half/bin/atomonly/newton
+      stencil: half/bin/3d/newton
+      bin: standard
+Total wall time: 0:00:48

@@ -1,0 +1,81 @@
+# Minimize and Relax  
+
+units			metal
+dimension		3
+boundary 		p p p	
+
+read_data		FeCuInitial.dat
+
+pair_style      eam/alloy
+pair_coeff		* * FeCuNi.eam.alloy Fe Cu Ni
+compute 		atomPE all pe/atom
+
+############################### Mnimization ###############################
+
+variable		tol			equal 	1e-10
+variable		iter		equal	1000000
+
+print 			"========================================="
+print 			"Mnimization Started"
+print 			"========================================="
+
+comm_style  	tiled
+balance 		1.0 rcb
+
+thermo 			100
+thermo_style	custom step temp vol press pe epair fmax cpuremain
+
+min_style 		cg
+minimize		${tol} ${tol} ${iter} ${iter}
+
+# Output Minimized Structure
+
+dump 			1 all cfg/mpiio 1 MinimizedFeCu_*.cfg mass type xs ys zs id c_atomPE 
+dump_modify 	1 element Fe Cu Ni
+run 			0
+write_data		FeCu_Minimized.dat	
+undump			1
+
+############################### First Relaxation ###############################
+
+variable 		eqr equal 20000
+
+print 			"========================================="
+print 			"Relax Stage: 1"
+print 			"========================================="
+
+timestep 		0.002
+reset_timestep	0
+
+velocity 		all create 5.0 61513 mom yes rot no 
+fix 			NPT all npt temp 5.0 300.0 0.5 iso 0 0 1.0
+
+thermo 			500
+thermo_style	custom step vol temp press pe etotal cpuremain
+
+run 			${eqr}
+
+unfix 			NPT
+
+############################### Second Relaxation ###############################
+
+print 			"========================================="
+print 			"Relax Stage: 2"
+print 			"========================================="
+
+velocity 		all scale 300.0
+fix 			NPT all npt temp 300.0 300.0 0.01 iso 0 0 1.0
+
+thermo 			500
+thermo_style	custom step vol temp press pe etotal cpuremain
+
+run 			${eqr}
+
+unfix 			NPT
+
+# Output Relaxed Structure
+
+dump 			1 all cfg/mpiio 1 FeCu0_*.cfg mass type xs ys zs id c_atomPE 
+dump_modify 	1 element Fe Cu Ni
+run				0
+write_data		FeCu0.dat	
